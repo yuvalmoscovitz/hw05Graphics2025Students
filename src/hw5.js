@@ -536,12 +536,184 @@ function setupCameraToggle() {
   });
 }
 
+function createBleachers() {
+  const bleacherGroup = new THREE.Group();
+  
+  const leftBleachers = createBleacherSide('left');
+  const rightBleachers = createBleacherSide('right');
+  
+  bleacherGroup.add(leftBleachers);
+  bleacherGroup.add(rightBleachers);
+
+  bleacherGroup.rotation.y = Math.PI / 2;
+  
+  scene.add(bleacherGroup);
+  return bleacherGroup;
+}
+
+function createBleacherSide(side) {
+  const BLEACHER_CONFIG = {
+    levels: 6,
+    stepHeight: 0.4,
+    stepDepth: 0.8,
+    seatWidth: 0.7,
+    bleacherOffset: 0.4,
+    railingHeight: 0.5,
+    supportSpacing: 4
+  };
+  
+  const sideGroup = new THREE.Group();
+  const seatLength = COURT_LENGTH;
+  const direction = side === 'left' ? -1 : 1;
+  
+  for (let level = 0; level < BLEACHER_CONFIG.levels; level++) {
+    const seat = createBleacherLevel(level, seatLength, BLEACHER_CONFIG, direction);
+    sideGroup.add(seat);
+  }
+  
+  const supports = createBleacherSupports(BLEACHER_CONFIG, seatLength, direction);
+  supports.forEach(support => sideGroup.add(support));
+  
+  const railings = createBleacherRailings(BLEACHER_CONFIG, seatLength, direction);
+  railings.forEach(railing => sideGroup.add(railing));
+  
+  return sideGroup;
+}
+
+function createBleacherLevel(level, seatLength, config, direction) {
+  const levelGroup = new THREE.Group();
+  
+  const height = config.stepHeight * level;
+  const xOffset = (COURT_WIDTH / 2) + config.bleacherOffset + (level * config.stepDepth);
+  const xPosition = direction * xOffset;
+  
+  const seatGeometry = new THREE.BoxGeometry(config.stepDepth, config.stepHeight, seatLength);
+  const seatMaterial = new THREE.MeshPhongMaterial({ 
+    color: 0xe8e8e8,
+    shininess: 30 
+  });
+  
+  const seat = new THREE.Mesh(seatGeometry, seatMaterial);
+  seat.position.set(xPosition, height + config.stepHeight / 2, 0);
+  seat.castShadow = true;
+  seat.receiveShadow = true;
+  levelGroup.add(seat);
+  
+  const numSeats = Math.floor(seatLength / config.seatWidth);
+  for (let i = 0; i < numSeats; i++) {
+    const seatMarker = createSeatMarker(config, xPosition, height, seatLength, i, numSeats);
+    levelGroup.add(seatMarker);
+  }
+  
+  return levelGroup;
+}
+
+function createSeatMarker(config, xPosition, height, seatLength, seatIndex, totalSeats) {
+  const markerGeometry = new THREE.BoxGeometry(0.05, 0.15, 0.05);
+  const markerMaterial = new THREE.MeshPhongMaterial({ color: 0x666666 });
+  
+  const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+  
+  const startZ = -seatLength / 2 + config.seatWidth / 2;
+  const zPosition = startZ + (seatIndex * config.seatWidth);
+  
+  marker.position.set(
+    xPosition,
+    height + config.stepHeight + 0.075,
+    zPosition
+  );
+  
+  marker.castShadow = true;
+  return marker;
+}
+
+function createBleacherSupports(config, seatLength, direction) {
+  const supports = [];
+  const supportMaterial = new THREE.MeshPhongMaterial({ color: 0x555555 });
+  
+  const numSupports = Math.ceil(seatLength / config.supportSpacing);
+  const maxHeight = config.stepHeight * config.levels;
+  
+  for (let i = 0; i <= numSupports - 1; i++) {
+    const zPosition = -seatLength / 2 + (i * config.supportSpacing);
+    
+    const supportGeometry = new THREE.BoxGeometry(0.2, maxHeight, 0.2);
+    const support = new THREE.Mesh(supportGeometry, supportMaterial);
+    
+    const xPosition = direction * ((COURT_WIDTH / 2) + config.bleacherOffset - 0.2);
+    support.position.set(xPosition, maxHeight / 2, zPosition);
+    support.castShadow = true;
+    support.receiveShadow = true;
+    
+    supports.push(support);
+    
+    if (i < numSupports -1 ) {
+      const bracing = createDiagonalBracing(
+        xPosition, 
+        zPosition, 
+        zPosition + config.supportSpacing, 
+        maxHeight,
+        supportMaterial
+      );
+      supports.push(bracing);
+    }
+  }
+  
+  return supports;
+}
+
+function createDiagonalBracing(xPosition, z1, z2, height, material) {
+  const braceLength = Math.sqrt(Math.pow(z2 - z1, 2) + Math.pow(height, 2));
+  const braceGeometry = new THREE.BoxGeometry(0.1, 0.1, braceLength);
+  const brace = new THREE.Mesh(braceGeometry, material);
+  
+  const midZ = (z1 + z2) / 2;
+  const angle = Math.atan2(height, z2 - z1);
+  
+  brace.position.set(xPosition, height / 2, midZ);
+  brace.rotation.x = -angle;
+  brace.castShadow = true;
+  
+  return brace;
+}
+
+function createBleacherRailings(config, seatLength, direction) {
+  const railings = [];
+  const railingMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+  
+  const topLevel = config.levels - 1;
+  const railingHeight = config.stepHeight * topLevel + config.railingHeight;
+  const xPosition = direction * ((COURT_WIDTH / 2) + config.bleacherOffset + (topLevel * config.stepDepth) + config.stepDepth / 2);
+  
+  const railGeometry = new THREE.BoxGeometry(0.08, 0.08, seatLength);
+  const topRail = new THREE.Mesh(railGeometry, railingMaterial);
+  topRail.position.set(xPosition, railingHeight, 0);
+  topRail.castShadow = true;
+  railings.push(topRail);
+  
+  const numPosts = Math.ceil(seatLength / 3);
+  for (let i = 0; i <= numPosts; i++) {
+    const postGeometry = new THREE.BoxGeometry(0.06, config.railingHeight, 0.06);
+    const post = new THREE.Mesh(postGeometry, railingMaterial);
+    
+    const zPosition = -seatLength / 2 + (i * (seatLength / numPosts));
+    const postHeight = config.stepHeight * topLevel + config.railingHeight / 2;
+    
+    post.position.set(xPosition, postHeight, zPosition);
+    post.castShadow = true;
+    railings.push(post);
+  }
+  
+  return railings;
+}
+
 createCourtLines();
 createHoop(HALF_COURT_LENGTH);
 createHoop(-HALF_COURT_LENGTH);
 createStaticBall();
 setupLighting();
 createBasicUI();
+createBleachers();
 ///////////////////////////////////////////////////////////////
 
 // Animation function
