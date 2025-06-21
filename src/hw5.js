@@ -143,7 +143,147 @@ function createThreePointArcs(material) {
   });
 }
 
+
+function createHoop(zPos) {
+  const group = new THREE.Group();
+  
+  const backboard = createBackboard();
+  const rim = createRim();
+  const net = createNet();
+  const pole = createPole();
+  const supportArm = createSupportArm();
+  
+  group.add(backboard);
+  group.add(rim);
+  group.add(net);
+  group.add(pole);
+  group.add(supportArm);
+  
+  // Position and orient the entire hoop
+  group.position.set(zPos, 0, 0);
+  if (zPos > 0) {
+    group.rotation.y = Math.PI + Math.PI/2;
+  } else {
+    group.rotation.y = Math.PI/2;
+  }
+  
+  scene.add(group);
+  return group;
+}
+
+const BOARD_WIDTH = 1.8;
+const BOARD_HEIGHT = 1;
+const BOARD_THICKNESS = 0.05;
+
+const ARM_LENGTH = 1;
+const ARM_THICKNESS = 0.08;
+
+const RIM_HEIGHT = 3.05;
+const RIM_RADIUS = 0.35;
+const RIM_TUBE_RADIUS = 0.02;
+const RIM_DISTANCE = 0.35;
+
+const NET_SEGMENTS = 12;
+const NET_DEPTH = 0.3;
+const NET_POINTS = 7;
+
+const POLE_RADIUS = 0.1;
+const POLE_HEIGHT = 3.5;
+
+
+function createBackboard() {
+  const material = new THREE.MeshPhongMaterial({
+    transparent: true,
+    opacity: 0.75
+  });
+  
+  const geometry = new THREE.BoxGeometry(BOARD_WIDTH, BOARD_HEIGHT, BOARD_THICKNESS);
+  const backboard = new THREE.Mesh(geometry, material);
+  
+  const boardZ = ARM_LENGTH + BOARD_THICKNESS / 2;
+  backboard.position.set(0, RIM_HEIGHT, boardZ);
+  backboard.castShadow = true;
+  backboard.receiveShadow = true;
+  
+  return backboard;
+}
+
+function createRim() {
+  const geometry = new THREE.TorusGeometry(RIM_RADIUS, RIM_TUBE_RADIUS, 16, 64);
+  const material = new THREE.MeshPhongMaterial({ color: 0xff6600 });
+  const rim = new THREE.Mesh(geometry, material);
+  
+  rim.rotation.x = Math.PI / 2;
+  
+  const boardFrontZ = ARM_LENGTH + BOARD_THICKNESS / 2 + BOARD_THICKNESS / 2;
+  const rimZ = boardFrontZ + RIM_DISTANCE;
+  rim.position.set(0, RIM_HEIGHT, rimZ);
+  rim.castShadow = true;
+  
+  return rim;
+}
+
+function createNet() {
+  const netGroup = new THREE.Group();
+  const lineMaterial = new THREE.LineBasicMaterial({ 
+    color: 0xffffff, 
+    linewidth: 3 
+  });
+  
+  // Create net strands
+  for (let i = 0; i < NET_SEGMENTS; i++) {
+    const angle = (i / NET_SEGMENTS) * Math.PI * 2;
+    const startX = Math.cos(angle) * RIM_RADIUS * 0.85;
+    const startZ = Math.sin(angle) * RIM_RADIUS * 0.85;
+    
+    const points = [];
+    for (let j = 0; j < NET_POINTS; j++) {
+      const t = j / (NET_POINTS - 1);
+      const y = -t * NET_DEPTH;
+      const taper = 1 - t * 0.4;
+      const x = startX * taper;
+      const z = startZ * taper;
+      points.push(new THREE.Vector3(x, y, z));
+    }
+    
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const line = new THREE.Line(geometry, lineMaterial);
+    netGroup.add(line);
+  }
+  
+  // Position net at rim location
+  const boardFrontZ = ARM_LENGTH + BOARD_THICKNESS / 2 + BOARD_THICKNESS / 2;
+  const rimZ = boardFrontZ + RIM_DISTANCE;
+  netGroup.position.set(0, RIM_HEIGHT, rimZ);
+  
+  return netGroup;
+}
+
+function createPole() {  
+  const geometry = new THREE.CylinderGeometry(POLE_RADIUS, POLE_RADIUS, POLE_HEIGHT, 16);
+  const material = new THREE.MeshPhongMaterial({ color: 0x666666 });
+  const pole = new THREE.Mesh(geometry, material);
+  
+  pole.position.set(0, POLE_HEIGHT / 2, 0);
+  pole.castShadow = true;
+  
+  return pole;
+}
+
+function createSupportArm() {
+  const geometry = new THREE.BoxGeometry(ARM_THICKNESS, ARM_THICKNESS, ARM_LENGTH);
+  const material = new THREE.MeshPhongMaterial({ color: 0x666666 });
+  const supportArm = new THREE.Mesh(geometry, material);
+  
+  supportArm.position.set(0, RIM_HEIGHT, ARM_LENGTH / 2);
+  supportArm.castShadow = true;
+  
+  return supportArm;
+}
+
 createCourtLines();
+createHoop(HALF_COURT_LENGTH);
+createHoop(-HALF_COURT_LENGTH);
 ///////////////////////////////////////////////////////////////
 
 // Animation function
