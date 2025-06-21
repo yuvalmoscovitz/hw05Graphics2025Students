@@ -78,6 +78,74 @@ function handleKeyDown(e) {
 
 document.addEventListener('keydown', handleKeyDown);
 
+///////////////////////////////////////////////////////////////
+const Y_LINE = 0.11;
+const COURT_LENGTH = 30;
+const COURT_WIDTH = 15;
+const HALF_COURT_LENGTH  = COURT_LENGTH / 2;
+const HALF__COURT_WIDTH  = COURT_WIDTH / 2;
+
+function createCourtLines() {
+  const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+
+  createCenterLine(lineMaterial);
+  createCenterCircle(lineMaterial);
+  createThreePointArcs(lineMaterial);
+}
+
+function createCenterLine(material) {
+  const centerLineGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, Y_LINE, -HALF__COURT_WIDTH),
+    new THREE.Vector3(0, Y_LINE, HALF__COURT_WIDTH)
+  ]);
+  
+  const centerLine = new THREE.Line(centerLineGeometry, material);
+  scene.add(centerLine);
+}
+
+function createCenterCircle(material) {
+  const CIRCLE_RADIUS = 2;
+  const CIRCLE_SEGMENTS = 128;
+  
+  const circlePoints = [];
+  for (let i = 0; i <= CIRCLE_SEGMENTS; i++) {
+    const angle = (i / CIRCLE_SEGMENTS) * Math.PI * 2;
+    const x = Math.sin(angle) * CIRCLE_RADIUS;
+    const z = Math.cos(angle) * CIRCLE_RADIUS;
+    circlePoints.push(new THREE.Vector3(x, Y_LINE, z));
+  }
+  
+  const circleGeometry = new THREE.BufferGeometry().setFromPoints(circlePoints);
+  const centerCircle = new THREE.LineLoop(circleGeometry, material);
+  scene.add(centerCircle);
+}
+
+function createThreePointArcs(material) {
+  const ARC_RADIUS = 6;
+  const ARC_SEGMENTS = 128;
+  const courtEnds = [-HALF_COURT_LENGTH, HALF_COURT_LENGTH];
+  
+  courtEnds.forEach(baselineX => {
+    const arcPoints = [];
+    
+    for (let i = 0; i <= ARC_SEGMENTS; i++) {
+      const angle = -Math.PI / 2 + (i / ARC_SEGMENTS) * Math.PI;
+      
+      const z = Math.sin(angle) * ARC_RADIUS;
+      const x = baselineX - Math.sign(baselineX) * Math.cos(angle) * ARC_RADIUS;
+      
+      arcPoints.push(new THREE.Vector3(x, Y_LINE, z));
+    }
+    
+    const arcGeometry = new THREE.BufferGeometry().setFromPoints(arcPoints);
+    const threePointArc = new THREE.Line(arcGeometry, material);
+    scene.add(threePointArc);
+  });
+}
+
+createCourtLines();
+///////////////////////////////////////////////////////////////
+
 // Animation function
 function animate() {
   requestAnimationFrame(animate);
