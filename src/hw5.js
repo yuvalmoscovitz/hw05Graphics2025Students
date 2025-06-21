@@ -55,19 +55,19 @@ const controls = new OrbitControls(camera, renderer.domElement);
 let isOrbitEnabled = true;
 
 // Instructions display
-const instructionsElement = document.createElement('div');
-instructionsElement.style.position = 'absolute';
-instructionsElement.style.bottom = '20px';
-instructionsElement.style.left = '20px';
-instructionsElement.style.color = 'white';
-instructionsElement.style.fontSize = '16px';
-instructionsElement.style.fontFamily = 'Arial, sans-serif';
-instructionsElement.style.textAlign = 'left';
-instructionsElement.innerHTML = `
-  <h3>Controls:</h3>
-  <p>O - Toggle orbit camera</p>
-`;
-document.body.appendChild(instructionsElement);
+// const instructionsElement = document.createElement('div');
+// instructionsElement.style.position = 'absolute';
+// instructionsElement.style.bottom = '20px';
+// instructionsElement.style.left = '20px';
+// instructionsElement.style.color = 'white';
+// instructionsElement.style.fontSize = '16px';
+// instructionsElement.style.fontFamily = 'Arial, sans-serif';
+// instructionsElement.style.textAlign = 'left';
+// instructionsElement.innerHTML = `
+//   <h3>Controls:</h3>
+//   <p>O - Toggle orbit camera</p>
+// `;
+//document.body.appendChild(instructionsElement);
 
 // Handle key events
 function handleKeyDown(e) {
@@ -380,10 +380,136 @@ function createRealisticBasketballSeams(ballRadius) {
   return seams;
 }
 
+function createBasicUI() {
+  createGlobalStyles();
+  
+  const scoreContainer = createScoreDisplay();
+  document.body.appendChild(scoreContainer);
+  
+  const controlsContainer = createControlsDisplay();
+  document.body.appendChild(controlsContainer);
+  
+  setupCameraToggle();
+}
+
+function createGlobalStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .ui-container {
+      position: absolute;
+      color: white;
+      font-family: 'Arial', sans-serif;
+      font-size: 16px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 8px;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .ui-container h3 {
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    .ui-container p {
+      margin: 5px 0;
+      line-height: 1.4;
+    }
+    
+    #score-value {
+      color: #ffcc00;
+      font-weight: bold;
+    }
+    
+    .control-key {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function createScoreDisplay() {
+  const scoreContainer = document.createElement('div');
+  scoreContainer.id = 'scoreboard';
+  scoreContainer.className = 'ui-container';
+  
+  scoreContainer.style.top = '20px';
+  scoreContainer.style.left = '20px';
+  
+  scoreContainer.innerHTML = `
+    <h3>Score: <span id="score-value">0</span></h3>
+  `;
+  
+  return scoreContainer;
+}
+
+function createControlsDisplay() {
+  const controlsContainer = document.createElement('div');
+  controlsContainer.id = 'controls';
+  controlsContainer.className = 'ui-container';
+  
+  controlsContainer.style.bottom = '20px';
+  controlsContainer.style.left = '20px';
+  
+  controlsContainer.innerHTML = `
+    <h3>Controls:</h3>
+    <p><span class="control-key">O</span> - Toggle orbit camera</p>
+    <p><span class="control-key">R</span> - Reset ball</p>
+    <p><span class="control-key">⬆️ ⬇️ ⬅️ ➡️</span> - Move ball</p>
+    <p><span class="control-key">W</span> / <span class="control-key">S</span> - Adjust shot power</p>
+    <p><span class="control-key">SPACE</span> - Shoot ball</p>
+  `;
+  
+  return controlsContainer;
+}
+
+function setupCameraToggle() {
+  let cameraControlsEnabled = false;
+  
+  document.addEventListener('keydown', (event) => {
+    if (event.key.toLowerCase() === 'o') {
+      cameraControlsEnabled = !cameraControlsEnabled;
+      
+      if (window.cameraControls) {
+        window.cameraControls.enabled = cameraControlsEnabled;
+      }
+      
+      const feedback = document.createElement('div');
+      feedback.style.position = 'absolute';
+      feedback.style.top = '50%';
+      feedback.style.left = '50%';
+      feedback.style.transform = 'translate(-50%, -50%)';
+      feedback.style.background = 'rgba(0, 0, 0, 0.8)';
+      feedback.style.color = 'white';
+      feedback.style.padding = '10px 20px';
+      feedback.style.borderRadius = '5px';
+      feedback.style.fontSize = '18px';
+      feedback.style.fontFamily = 'Arial, sans-serif';
+      feedback.style.zIndex = '1000';
+      feedback.textContent = `Camera Controls: ${cameraControlsEnabled ? 'ON' : 'OFF'}`;
+      
+      document.body.appendChild(feedback);
+      
+      setTimeout(() => {
+        document.body.removeChild(feedback);
+      }, 2000);
+      
+      console.log(`Camera controls ${cameraControlsEnabled ? 'enabled' : 'disabled'}`);
+    }
+  });
+}
+
 createCourtLines();
 createHoop(HALF_COURT_LENGTH);
 createHoop(-HALF_COURT_LENGTH);
 createStaticBall();
+createBasicUI();
 ///////////////////////////////////////////////////////////////
 
 // Animation function
