@@ -297,11 +297,61 @@ function createStaticBall() {
 
 function createBallMesh(radius) {
   const geometry = new THREE.SphereGeometry(radius, 32, 32);
-  const material = new THREE.MeshPhongMaterial({ color: 0xffa500 });
-  const ball = new THREE.Mesh(geometry, material);
   
+  const texture = createBasketballTexture();
+  const material = new THREE.MeshPhongMaterial({ 
+    color: 0xffa500,
+    map: texture
+  });
+  
+  const ball = new THREE.Mesh(geometry, material);
   ball.castShadow = true;
   return ball;
+}
+
+function createBasketballTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  
+  const ctx = canvas.getContext('2d');
+  
+  ctx.fillStyle = '#ff8c00';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  const dotSize = 2;
+  const spacing = 8;
+  const rows = Math.floor(canvas.height / spacing);
+  const cols = Math.floor(canvas.width / spacing);
+  
+  ctx.fillStyle = '#e67300';
+  
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const offsetX = (row % 2) * (spacing / 2);
+      const x = col * spacing + offsetX;
+      const y = row * spacing;
+      
+      if (x < canvas.width && y < canvas.height) {
+        ctx.beginPath();
+        ctx.arc(x, y, dotSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  
+  ctx.fillStyle = '#d4590a';
+  for (let i = 0; i < 200; i++) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const size = Math.random() * 1.5 + 0.5;
+    
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  return new THREE.CanvasTexture(canvas);
 }
 
 function positionBall(ball, radius, heightOffset) {
