@@ -79,6 +79,13 @@ function handleKeyDown(e) {
 document.addEventListener('keydown', handleKeyDown);
 
 ///////////////////////////////////////////////////////////////
+function handleWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+window.addEventListener('resize', handleWindowResize);
+
 const Y_LINE = 0.11;
 const COURT_LENGTH = 30;
 const COURT_WIDTH = 15;
