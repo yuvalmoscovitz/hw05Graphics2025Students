@@ -312,34 +312,21 @@ function createRealisticBasketballSeams(ballRadius) {
   const SEAM_THICKNESS = 0.005;
   const seamMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
   const seams = [];
-  
-  const seamAxes = ['x', 'z'];
-  
-  seamAxes.forEach(axis => {
-    const seamGeometry = new THREE.TorusGeometry(ballRadius, SEAM_THICKNESS, 8, 100);
-    const seam = new THREE.Mesh(seamGeometry, seamMaterial);
-    
-    if (axis === 'x') {
-      seam.rotation.x = Math.PI / 2;
-    } else if (axis === 'z') {
-      seam.rotation.z = Math.PI / 2;
-    }
-    
-    seams.push(seam);
+
+  const baseGeo = new THREE.TorusGeometry(ballRadius, SEAM_THICKNESS, 8, 128);
+  const equator = new THREE.Mesh(baseGeo, seamMaterial);
+  seams.push(equator);
+
+  const vertical = new THREE.Mesh(baseGeo, seamMaterial);
+  vertical.rotation.y = Math.PI / 2;
+  seams.push(vertical);
+
+  [ Math.PI/4, -Math.PI/4 ].forEach(offset => {
+    const side = new THREE.Mesh(baseGeo, seamMaterial);
+    side.rotation.y = Math.PI / 2 + offset;
+    seams.push(side);
   });
-  
-  const ellipseRadius = ballRadius * 0.85;
-  
-  for (let i = 0; i < 2; i++) {
-    const ellipseGeometry = new THREE.TorusGeometry(ellipseRadius, SEAM_THICKNESS, 8, 100);
-    const ellipse = new THREE.Mesh(ellipseGeometry, seamMaterial);
-    
-    const yOffset = ballRadius * 0.5;
-    ellipse.position.y = i === 0 ? yOffset : -yOffset;
-    
-    seams.push(ellipse);
-  }
-  
+
   return seams;
 }
 
