@@ -387,6 +387,30 @@ function createRealisticBasketballSeams(ballRadius) {
   return seams;
 }
 
+function setupLighting() {
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+  scene.add(ambientLight);
+
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.05);
+  directionalLight.position.set(10, 20, 15);
+  directionalLight.castShadow = true;
+  
+  directionalLight.shadow.mapSize.width = 2048;
+  directionalLight.shadow.mapSize.height = 2048;
+  directionalLight.shadow.camera.near = 0.5;
+  directionalLight.shadow.camera.far = 50;
+  directionalLight.shadow.camera.left = -25;
+  directionalLight.shadow.camera.right = 25;
+  directionalLight.shadow.camera.top = 25;
+  directionalLight.shadow.camera.bottom = -25;
+  
+  scene.add(directionalLight);
+
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.25);
+  fillLight.position.set(-10, 10, -10);
+  scene.add(fillLight);
+}
+
 function createBasicUI() {
   createGlobalStyles();
   
@@ -489,8 +513,8 @@ function setupCameraToggle() {
       
       const feedback = document.createElement('div');
       feedback.style.position = 'absolute';
-      feedback.style.top = '50%';
-      feedback.style.left = '50%';
+      feedback.style.top = '5%';
+      feedback.style.left = '95%';
       feedback.style.transform = 'translate(-50%, -50%)';
       feedback.style.background = 'rgba(0, 0, 0, 0.8)';
       feedback.style.color = 'white';
@@ -499,7 +523,7 @@ function setupCameraToggle() {
       feedback.style.fontSize = '18px';
       feedback.style.fontFamily = 'Arial, sans-serif';
       feedback.style.zIndex = '1000';
-      feedback.textContent = `Camera Controls: ${cameraControlsEnabled ? 'ON' : 'OFF'}`;
+      feedback.textContent = `Camera Controls: ${cameraControlsEnabled ? 'OFF' : 'ON'}`;
       
       document.body.appendChild(feedback);
       
@@ -516,6 +540,7 @@ createCourtLines();
 createHoop(HALF_COURT_LENGTH);
 createHoop(-HALF_COURT_LENGTH);
 createStaticBall();
+setupLighting();
 createBasicUI();
 ///////////////////////////////////////////////////////////////
 
