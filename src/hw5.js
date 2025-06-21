@@ -281,9 +281,72 @@ function createSupportArm() {
   return supportArm;
 }
 
+function createStaticBall() {
+  const BALL_RADIUS = 0.24;
+  const BALL_HEIGHT_OFFSET = 0.1;
+  
+  const ball = createBallMesh(BALL_RADIUS);
+  positionBall(ball, BALL_RADIUS, BALL_HEIGHT_OFFSET);
+  
+  const seams = createRealisticBasketballSeams(BALL_RADIUS);
+  seams.forEach(seam => ball.add(seam));
+  
+  scene.add(ball);
+  return ball;
+}
+
+function createBallMesh(radius) {
+  const geometry = new THREE.SphereGeometry(radius, 32, 32);
+  const material = new THREE.MeshPhongMaterial({ color: 0xffa500 });
+  const ball = new THREE.Mesh(geometry, material);
+  
+  ball.castShadow = true;
+  return ball;
+}
+
+function positionBall(ball, radius, heightOffset) {
+  ball.position.set(0, radius + heightOffset, 0);
+}
+
+function createRealisticBasketballSeams(ballRadius) {
+  const SEAM_THICKNESS = 0.005;
+  const seamMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  const seams = [];
+  
+  const seamAxes = ['x', 'z'];
+  
+  seamAxes.forEach(axis => {
+    const seamGeometry = new THREE.TorusGeometry(ballRadius, SEAM_THICKNESS, 8, 100);
+    const seam = new THREE.Mesh(seamGeometry, seamMaterial);
+    
+    if (axis === 'x') {
+      seam.rotation.x = Math.PI / 2;
+    } else if (axis === 'z') {
+      seam.rotation.z = Math.PI / 2;
+    }
+    
+    seams.push(seam);
+  });
+  
+  const ellipseRadius = ballRadius * 0.85;
+  
+  for (let i = 0; i < 2; i++) {
+    const ellipseGeometry = new THREE.TorusGeometry(ellipseRadius, SEAM_THICKNESS, 8, 100);
+    const ellipse = new THREE.Mesh(ellipseGeometry, seamMaterial);
+    
+    const yOffset = ballRadius * 0.5;
+    ellipse.position.y = i === 0 ? yOffset : -yOffset;
+    
+    seams.push(ellipse);
+  }
+  
+  return seams;
+}
+
 createCourtLines();
 createHoop(HALF_COURT_LENGTH);
 createHoop(-HALF_COURT_LENGTH);
+createStaticBall();
 ///////////////////////////////////////////////////////////////
 
 // Animation function
