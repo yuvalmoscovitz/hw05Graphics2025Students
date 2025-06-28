@@ -15,6 +15,10 @@
 - Yuval Moscovitz
 - Omri Weinstein
 
+## Group Members ID's
+- Yuval Moscovitz: 322632100
+- Omri Weinstein: 211895495
+
 ## Technical Details
 - Run the server with: `node index.js`
 - Access at http://localhost:8000 in your web browser
