@@ -212,6 +212,10 @@ function createBackboard() {
   backboard.castShadow = true;
   backboard.receiveShadow = true;
   
+  // Bonus
+  const nbaLogo = createNBALogo();
+  backboard.add(nbaLogo);
+  
   return backboard;
 }
 
@@ -920,6 +924,45 @@ function createFreeThrowLine(courtEnd, config, material) {
   
   const lineGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
   return new THREE.Line(lineGeometry, material);
+}
+
+
+function createNBALogo() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 128;
+  
+  const ctx = canvas.getContext('2d');
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  ctx.fillStyle = '#0066CC';
+  ctx.font = 'bold 96px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+  
+  ctx.fillText('NBA', canvas.width / 2, canvas.height / 2);
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  
+  const logoMaterial = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    alphaTest: 0.1
+  });
+  
+  const logoGeometry = new THREE.PlaneGeometry(0.6, 0.3);
+  const logoMesh = new THREE.Mesh(logoGeometry, logoMaterial);
+  
+  logoMesh.position.set(0, 0.2, BOARD_THICKNESS / 2 + 0.001);
+  
+  return logoMesh;
 }
 
 createCourtLines();
