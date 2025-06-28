@@ -18,3 +18,19 @@
 ## Technical Details
 - Run the server with: `node index.js`
 - Access at http://localhost:8000 in your web browser
+
+## Screenshots
+![screenshot1](./screenshots/img1.png)
+![screenshot1](./screenshots/img2.png)
+![screenshot1](./screenshots/img3.png)
+![screenshot1](./screenshots/img4.png)
+![screenshot1](./screenshots/img5.png)
+
+## Additional Features
+- Branded backboards
+- Free throw (+key) lines
+- Stands 
+- 3D banner
+- Enhanced scores
+
+
