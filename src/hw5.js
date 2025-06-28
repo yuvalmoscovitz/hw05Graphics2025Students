@@ -818,6 +818,110 @@ function createAnimatedLEDTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
+function createKeyArea(courtEnd, config, material) {
+  const direction = Math.sign(courtEnd);
+  const freeThrowLineX = courtEnd - (direction * config.length);
+  
+  const keyPoints = [
+    new THREE.Vector3(courtEnd, Y_LINE, -config.width / 2),
+    new THREE.Vector3(courtEnd, Y_LINE, config.width / 2),
+    new THREE.Vector3(freeThrowLineX, Y_LINE, config.width / 2),
+    new THREE.Vector3(freeThrowLineX, Y_LINE, -config.width / 2),
+    new THREE.Vector3(courtEnd, Y_LINE, -config.width / 2)
+  ];
+  
+  const keyGeometry = new THREE.BufferGeometry().setFromPoints(keyPoints);
+  return new THREE.Line(keyGeometry, material);
+}
+
+function createFreeThrowCircle(courtEnd, config, material) {
+  const direction = Math.sign(courtEnd);
+  const freeThrowLineX = courtEnd - (direction * config.length);
+  const radius = config.width / 2;
+  
+  const circlePoints = [];
+  
+  for (let i = 0; i <= config.segments; i++) {
+    const angle = Math.PI * (i / config.segments); // Semicircle from 0 to π
+    const z = Math.cos(angle) * radius;
+    const x = freeThrowLineX - (direction * Math.sin(angle) * radius);
+    
+    circlePoints.push(new THREE.Vector3(x, Y_LINE, z));
+  }
+  
+  const circleGeometry = new THREE.BufferGeometry().setFromPoints(circlePoints);
+  return new THREE.Line(circleGeometry, material);
+}
+
+function createKeyAndFreeThrow() {
+  const ENHANCED_CONFIG = {
+    width: 3.92,            
+    length: 3.28,           
+    segments: 64,
+    freeThrowRadius: 1.96,  
+    hashMarkLength: 0.24,   
+    hashMarkSpacing: 0.48   
+  };
+  
+  const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+  const courtEnds = [-HALF_COURT_LENGTH, HALF_COURT_LENGTH];
+  
+  courtEnds.forEach(courtEnd => {
+    const keyArea = createKeyArea(courtEnd, ENHANCED_CONFIG, lineMaterial);
+    const freeThrowCircle = createFreeThrowCircle(courtEnd, ENHANCED_CONFIG, lineMaterial);
+    
+    const hashMarks = createLaneHashMarks(courtEnd, ENHANCED_CONFIG, lineMaterial);
+    const freeThrowLine = createFreeThrowLine(courtEnd, ENHANCED_CONFIG, lineMaterial);
+    
+    scene.add(keyArea);
+    scene.add(freeThrowCircle);
+    hashMarks.forEach(mark => scene.add(mark));
+    scene.add(freeThrowLine);
+  });
+}
+
+function createLaneHashMarks(courtEnd, config, material) {
+  const direction = Math.sign(courtEnd);
+  const hashMarks = [];
+  const numMarks = Math.floor(config.length / config.hashMarkSpacing);
+  
+  for (let i = 1; i < numMarks; i++) {
+    const xPosition = courtEnd - (direction * i * config.hashMarkSpacing);
+    
+    // Top side hash marks
+    const topHashPoints = [
+      new THREE.Vector3(xPosition, Y_LINE, -config.width / 2 - config.hashMarkLength),
+      new THREE.Vector3(xPosition, Y_LINE, -config.width / 2)
+    ];
+    
+    // Bottom side hash marks
+    const bottomHashPoints = [
+      new THREE.Vector3(xPosition, Y_LINE, config.width / 2),
+      new THREE.Vector3(xPosition, Y_LINE, config.width / 2 + config.hashMarkLength)
+    ];
+    
+    hashMarks.push(
+      new THREE.Line(new THREE.BufferGeometry().setFromPoints(topHashPoints), material),
+      new THREE.Line(new THREE.BufferGeometry().setFromPoints(bottomHashPoints), material)
+    );
+  }
+  
+  return hashMarks;
+}
+
+function createFreeThrowLine(courtEnd, config, material) {
+  const direction = Math.sign(courtEnd);
+  const freeThrowLineX = courtEnd - (direction * config.length);
+  
+  const linePoints = [
+    new THREE.Vector3(freeThrowLineX, Y_LINE, -config.width / 2),
+    new THREE.Vector3(freeThrowLineX, Y_LINE, config.width / 2)
+  ];
+  
+  const lineGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
+  return new THREE.Line(lineGeometry, material);
+}
+
 createCourtLines();
 createHoop(HALF_COURT_LENGTH);
 createHoop(-HALF_COURT_LENGTH);
@@ -826,6 +930,7 @@ setupLighting();
 createBasicUI();
 createBleachers();
 create3DBanner();
+createKeyAndFreeThrow();
 ///////////////////////////////////////////////////////////////
 
 // Animation function
