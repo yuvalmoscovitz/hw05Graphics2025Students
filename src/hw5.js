@@ -707,6 +707,117 @@ function createBleacherRailings(config, seatLength, direction) {
   return railings;
 }
 
+function create3DBanner() {
+  const bannerGroup = new THREE.Group();
+  
+  const screen = createLEDScreen();
+  
+  bannerGroup.add(screen);
+  
+  bannerGroup.position.set(0, 8, 0);
+  
+  scene.add(bannerGroup);
+  return bannerGroup;
+}
+
+function createLEDScreen() {
+  const SCREEN_CONFIG = {
+    size: 2,
+    segments: 32
+  };
+  
+  // Create animated LED texture
+  const texture = createAnimatedLEDTexture();
+  
+  // Screen material with glow effect
+  const screenMaterial = new THREE.MeshBasicMaterial({ 
+    map: texture,
+    transparent: true,
+    opacity: 0.95
+  });
+  
+  // Create cube screen
+  const cubeScreen = new THREE.Mesh(
+    new THREE.BoxGeometry(SCREEN_CONFIG.size, SCREEN_CONFIG.size, SCREEN_CONFIG.size, SCREEN_CONFIG.segments, SCREEN_CONFIG.segments, SCREEN_CONFIG.segments),
+    screenMaterial
+  );
+  
+  cubeScreen.position.set(0, 0, 0);
+  
+  // Add screen glow effect around the cube
+  const glowGeometry = new THREE.BoxGeometry(SCREEN_CONFIG.size + 0.2, SCREEN_CONFIG.size + 0.2, SCREEN_CONFIG.size + 0.2);
+  const glowMaterial = new THREE.MeshBasicMaterial({
+    color: 0x39FF14,
+    transparent: true,
+    opacity: 0.05,
+    side: THREE.DoubleSide
+  });
+  
+  const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+  glow.position.set(0, 0, 0);
+  
+  const screenGroup = new THREE.Group();
+  screenGroup.add(glow);
+  screenGroup.add(cubeScreen);
+  
+  return screenGroup;
+}
+
+function createAnimatedLEDTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  
+  // Create LED grid background
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Add LED dot pattern
+  const dotSize = 3;
+  const spacing = 12;
+  ctx.fillStyle = '#1a1a2e';
+  
+  for (let x = spacing; x < canvas.width; x += spacing) {
+    for (let y = spacing; y < canvas.height; y += spacing) {
+      ctx.beginPath();
+      ctx.arc(x, y, dotSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  
+  // Main text with LED effect
+  const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+  gradient.addColorStop(0, '#00bfff');
+  gradient.addColorStop(0.5, '#00ffff');
+  gradient.addColorStop(1, '#00bfff');
+  
+  ctx.fillStyle = gradient;
+  ctx.font = 'bold 120px "Courier New", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  // Add text glow effect
+  ctx.shadowColor = '#00bfff';
+  ctx.shadowBlur = 20;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  
+  ctx.fillText('NBA', canvas.width / 2, canvas.height / 2);
+  
+  // Add LED scan line effect
+  ctx.shadowBlur = 0;
+  const scanLineGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  scanLineGradient.addColorStop(0, 'rgba(0, 191, 255, 0)');
+  scanLineGradient.addColorStop(0.5, 'rgba(0, 191, 255, 0.08)');
+  scanLineGradient.addColorStop(1, 'rgba(0, 191, 255, 0)');
+  
+  ctx.fillStyle = scanLineGradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  return new THREE.CanvasTexture(canvas);
+}
+
 createCourtLines();
 createHoop(HALF_COURT_LENGTH);
 createHoop(-HALF_COURT_LENGTH);
@@ -714,6 +825,7 @@ createStaticBall();
 setupLighting();
 createBasicUI();
 createBleachers();
+create3DBanner();
 ///////////////////////////////////////////////////////////////
 
 // Animation function
