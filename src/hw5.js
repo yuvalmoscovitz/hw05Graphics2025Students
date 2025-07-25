@@ -458,6 +458,11 @@ function createGlobalStyles() {
       font-weight: bold;
     }
     
+    #power-value {
+      color: #00ff88;
+      font-weight: bold;
+    }
+    
     .control-key {
       background: rgba(255, 255, 255, 0.2);
       padding: 2px 6px;
@@ -479,6 +484,7 @@ function createScoreDisplay() {
   
   scoreContainer.innerHTML = `
     <h3>Score: <span id="score-value">0</span></h3>
+    <p>Power: <span id="power-value">50%</span></p>
   `;
   
   return scoreContainer;
@@ -502,6 +508,8 @@ function createInteractiveBall() {
   scene.add(ball);
   return ball;
 }
+
+let shotPower = 0.5;
 
 function handleKeyDown(e) {
   switch(e.key.toLowerCase()) {
@@ -530,17 +538,37 @@ function handleKeyDown(e) {
       }
       break;
     
+    case 'w':          
+      shotPower = Math.min(1, shotPower + 0.05); 
+      updatePowerDisplay(); 
+      break;
+    case 's':          
+      shotPower = Math.max(0, shotPower - 0.05); 
+      updatePowerDisplay(); 
+      break;
+    
     case 'r':          
       resetBall(); 
       break;
   }
 }
 
+function updatePowerDisplay() {
+  const powerElement = document.getElementById('power-value');
+  if (powerElement) {
+    powerElement.textContent = `${Math.round(shotPower * 100)}%`;
+  }
+}
+
+
+
 function resetBall() {
   if (ball) {
     isFlying = false;
     velocity.set(0, 0, 0);
     ball.position.set(0, 0.24 + 0.1, 0);
+    shotPower = 0.5;
+    updatePowerDisplay();
     console.log('Ball reset to center court');
   }
 }
