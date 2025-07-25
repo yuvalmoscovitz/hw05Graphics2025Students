@@ -1,4 +1,4 @@
-# Computer Graphics - Exercise 6 - WebGL Basketball Court
+# Computer Graphics - Exercise 5 - WebGL Basketball Court
 
 ## Getting Started
 1. Clone this repository to your local machine
@@ -24,18 +24,17 @@
 - Access at http://localhost:8000 in your web browser
 
 ## Screenshots
-![screenshot1](./screenshots/img21.png)
-![screenshot1](./screenshots/img22.png)
-![screenshot1](./screenshots/img23.png)
-![screenshot1](./screenshots/img24.png)
-![screenshot1](./screenshots/img25.png)
+![screenshot1](./screenshots/img1.png)
+![screenshot1](./screenshots/img2.png)
+![screenshot1](./screenshots/img3.png)
+![screenshot1](./screenshots/img4.png)
+![screenshot1](./screenshots/img5.png)
 
 ## Additional Features
-- Sound
-- High Score (with local storage)
-- Combo
-- Multiple Hoops
-- Ball Trail Effects
-- Advanced Physics
+- Branded backboards
+- Free throw (+key) lines
+- Stands 
+- 3D banner
+- Enhanced scores
 
 
