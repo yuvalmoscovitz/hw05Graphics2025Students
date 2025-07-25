@@ -518,6 +518,9 @@ let hasScored = false;
 const restitution = 0.7;
 const rimRadius = 0.35;
 
+let spinAxis = new THREE.Vector3(1, 0, 0);
+let spinSpeed = 0;
+
 function handleKeyDown(e) {
   switch(e.key.toLowerCase()) {
     case 'o': 
@@ -527,21 +530,25 @@ function handleKeyDown(e) {
     case 'arrowleft':  
       if (!isFlying) {
         ball.position.x = Math.max(-COURT_WIDTH/2 + 1, ball.position.x - 0.5);
+        ball.rotateZ(0.2);
       }
       break;
     case 'arrowright': 
       if (!isFlying) {
         ball.position.x = Math.min(COURT_WIDTH/2 - 1, ball.position.x + 0.5);
+        ball.rotateZ(-0.2);
       }
       break;
     case 'arrowup':    
       if (!isFlying) {
         ball.position.z = Math.max(-COURT_LENGTH/2 + 1, ball.position.z - 0.5);
+        ball.rotateX(0.2);
       }
       break;
     case 'arrowdown':  
       if (!isFlying) {
         ball.position.z = Math.min(COURT_LENGTH/2 - 1, ball.position.z + 0.5);
+        ball.rotateX(-0.2);
       }
       break;
     
@@ -576,7 +583,7 @@ function launchShot() {
     -ball.position.z
   );
 
-  targetVector.y += 30;
+  targetVector.y += 20;
   const direction = targetVector.normalize();
   const speed = shotPower * 30;
   velocity.copy(direction.multiplyScalar(speed));
@@ -1105,6 +1112,17 @@ function animate() {
     
     velocity.addScaledVector(acceleration, dt);
     ball.position.addScaledVector(velocity, dt);
+    
+    const tmp = new THREE.Vector3().crossVectors(velocity, new THREE.Vector3(0, 1, 0));
+    const speed = velocity.length() / 0.24;
+
+    if (tmp.lengthSq() > 1e-6) {
+      spinAxis.copy(tmp.normalize());
+      spinSpeed = speed;
+    }
+
+    const spinAngle = spinSpeed * dt;
+    ball.rotateOnWorldAxis(spinAxis, spinAngle);
     
     if (ball.position.y <= floorY) {
       ball.position.y = floorY;
