@@ -490,6 +490,18 @@ function createGlobalStyles() {
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
     }
     
+    #high-score {
+      color: #ff6b6b;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    
+    #combo-count {
+      color: #ff00ff;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    
     #power-value {
       color: #00ff88;
       font-weight: bold;
@@ -534,6 +546,12 @@ function createGlobalStyles() {
       margin: 5px 0;
       border-left: 4px solid #00ff88;
     }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
   `;
   document.head.appendChild(style);
 }
@@ -551,6 +569,8 @@ function createScoreDisplay() {
     <div class="stat-highlight">
       <p><strong>Score:</strong> <span id="score-value">0</span> points</p>
     </div>
+    <p><strong>High Score:</strong> <span id="high-score">${highScore}</span></p>
+    <p><strong>Combo:</strong> <span id="combo-count">0</span></p>
     <p><strong>Shot Power:</strong> <span id="power-value">30%</span></p>
     <p><strong>Attempts:</strong> <span id="shots-attempted">0</span></p>
     <p><strong>Makes:</strong> <span id="shots-made">0</span></p>
@@ -602,6 +622,8 @@ function updateUI() {
   document.getElementById('shots-made').textContent = shotsMade;
   document.getElementById('accuracy').textContent = `${shotsAttempted ? Math.round(shotsMade/shotsAttempted*100) : 0}%`;
   document.getElementById('score-value').textContent = score;
+  document.getElementById('high-score').textContent = highScore;
+  document.getElementById('combo-count').textContent = comboCount;
   updateGameStatus();
 }
 
@@ -713,7 +735,9 @@ function resetBall() {
     velocity.set(0, 0, 0);
     ball.position.set(0, 0.24 + 0.1, 0);
     shotPower = 0.3;
+    comboCount = 0;
     updatePowerDisplay();
+    updateUI();
     console.log('Ball reset to center court');
   }
 }
@@ -1228,6 +1252,116 @@ function createNBALogo() {
   return logoMesh;
 }
 
+let comboCount = 0;
+let ballTrail = [];
+let highScore = localStorage.getItem('basketballHighScore') ? parseInt(localStorage.getItem('basketballHighScore')) : 0;
+
+function playSound(type) {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let frequency, duration;
+    
+    switch(type) {
+      case 'bounce':
+        frequency = 200;
+        duration = 0.1;
+        break;
+      case 'score':
+        frequency = 800;
+        duration = 0.3;
+        break;
+      case 'miss':
+        frequency = 150;
+        duration = 0.2;
+        break;
+      case 'combo':
+        frequency = 1000;
+        duration = 0.4;
+        break;
+      default:
+        return;
+    }
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration);
+  } catch(e) {
+    console.log('Audio not available');
+  }
+}
+
+function updateCombo(scored) {
+  if (scored) {
+    comboCount++;
+    if (comboCount > 1) {
+      const bonusPoints = comboCount;
+      score += bonusPoints;
+      showFeedback(`COMBO x${comboCount}! +${bonusPoints} BONUS!`);
+      playSound('combo');
+    } else {
+      showFeedback('SHOT MADE!');
+      playSound('score');
+    }
+  } else {
+    comboCount = 0;
+    playSound('miss');
+  }
+}
+
+function createBallTrail() {
+  if (isFlying) {
+    ballTrail.push({
+      position: ball.position.clone(),
+      time: Date.now()
+    });
+    
+    if (ballTrail.length > 15) {
+      ballTrail.shift();
+    }
+    
+    ballTrail.forEach((point, index) => {
+      if (index > 0) {
+        const opacity = (index / ballTrail.length) * 0.5;
+        const trailGeometry = new THREE.SphereGeometry(0.03, 8, 8);
+        const trailMaterial = new THREE.MeshBasicMaterial({ 
+          color: 0xffa500, 
+          transparent: true, 
+          opacity: opacity 
+        });
+        const trailBall = new THREE.Mesh(trailGeometry, trailMaterial);
+        trailBall.position.copy(point.position);
+        scene.add(trailBall);
+        
+        setTimeout(() => {
+          scene.remove(trailBall);
+        }, 50);
+      }
+    });
+  } else {
+    ballTrail = [];
+  }
+}
+
+function updateHighScore() {
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem('basketballHighScore', highScore.toString());
+    showFeedback('NEW HIGH SCORE!');
+    playSound('combo');
+  }
+}
+
 createCourtLines();
 createHoop(HALF_COURT_LENGTH);
 createHoop(-HALF_COURT_LENGTH);
@@ -1259,17 +1393,19 @@ function animate() {
     const spinAngle = spinSpeed * dt;
     ball.rotateOnWorldAxis(spinAxis, spinAngle);
     
+    createBallTrail();
     updateGameStatus();
     
     if (ball.position.y <= floorY) {
       ball.position.y = floorY;
       velocity.y *= -restitution;
+      playSound('bounce');
       
       if (Math.abs(velocity.y) < 1) {
         isFlying = false;
         velocity.y = 0;
         if (!hasScored) {
-          showFeedback('MISSED SHOT!');
+          updateCombo(false);
         }
         updateGameStatus();
         console.log('Ball stopped bouncing');
@@ -1286,6 +1422,7 @@ function animate() {
       Math.abs(ball.position.z) < 1
     ) {
       velocity.x = -velocity.x * restitution;
+      playSound('bounce');
       console.log('Ball hit backboard');
     }
     
@@ -1304,7 +1441,8 @@ function animate() {
       hasScored = true;
       shotsMade++;
       score += 2;
-      showFeedback('SHOT MADE!');
+      updateCombo(true);
+      updateHighScore();
       updateUI();
       console.log('SHOT MADE!');
       velocity.y = -1;
@@ -1320,11 +1458,13 @@ function animate() {
       const normal = new THREE.Vector3(dx, 0, dz).normalize();
       const dotProduct = velocity.dot(normal);
       velocity.addScaledVector(normal, -2 * dotProduct * restitution);
+      playSound('bounce');
       console.log('Ball hit rim');
     }
     
     if (ball.position.x < -COURT_LENGTH/2 - 5 || ball.position.x > COURT_LENGTH/2 + 5) {
       isFlying = false;
+      updateCombo(false);
       showFeedback('MISSED SHOT!');
       updateUI();
       updateGameStatus();
