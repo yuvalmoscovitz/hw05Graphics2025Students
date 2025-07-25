@@ -24,11 +24,11 @@
 - Access at http://localhost:8000 in your web browser
 
 ## Screenshots
-![screenshot1](./screenshots/img21.png)
-![screenshot1](./screenshots/img22.png)
-![screenshot1](./screenshots/img23.png)
-![screenshot1](./screenshots/img24.png)
-![screenshot1](./screenshots/img25.png)
+![screenshot1](./screenshots/image21.png)
+![screenshot1](./screenshots/image22.png)
+![screenshot1](./screenshots/image23.png)
+![screenshot1](./screenshots/image24.png)
+![screenshot1](./screenshots/image25.png)
 
 ## Additional Features
 - Sound
