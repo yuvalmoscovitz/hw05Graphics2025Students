@@ -514,6 +514,10 @@ let targetZ = 0;
 const floorY = 0.34;
 const rimHeight = 3.05;
 
+let hasScored = false;
+const restitution = 0.7;
+const rimRadius = 0.35;
+
 function handleKeyDown(e) {
   switch(e.key.toLowerCase()) {
     case 'o': 
@@ -542,11 +546,11 @@ function handleKeyDown(e) {
       break;
     
     case 'w':          
-      shotPower = Math.min(1, shotPower + 0.01); 
+      shotPower = Math.min(1, shotPower + 0.03); 
       updatePowerDisplay(); 
       break;
     case 's':          
-      shotPower = Math.max(0, shotPower - 0.01); 
+      shotPower = Math.max(0, shotPower - 0.03); 
       updatePowerDisplay(); 
       break;
     
@@ -564,8 +568,7 @@ function handleKeyDown(e) {
 
 function launchShot() {
   targetZ = (Math.abs(ball.position.x - COURT_LENGTH/2) < Math.abs(ball.position.x + COURT_LENGTH/2))
-            ? COURT_LENGTH/2
-            : -COURT_LENGTH/2;
+            ? COURT_LENGTH/2 : -COURT_LENGTH/2;
 
   const targetVector = new THREE.Vector3(
     targetZ - ball.position.x,
@@ -574,13 +577,12 @@ function launchShot() {
   );
 
   targetVector.y += 30;
-
   const direction = targetVector.normalize();
   const speed = shotPower * 30;
-
   velocity.copy(direction.multiplyScalar(speed));
   
   isFlying = true;
+  hasScored = false;
   
   console.log(`Shot launched with power ${Math.round(shotPower * 100)}% toward hoop at x=${targetZ}`);
 }
@@ -592,11 +594,10 @@ function updatePowerDisplay() {
   }
 }
 
-
-
 function resetBall() {
   if (ball) {
     isFlying = false;
+    hasScored = false;
     velocity.set(0, 0, 0);
     ball.position.set(0, 0.24 + 0.1, 0);
     shotPower = 0.3;
@@ -604,7 +605,6 @@ function resetBall() {
     console.log('Ball reset to center court');
   }
 }
-
 
 function createControlsDisplay() {
   const controlsContainer = document.createElement('div');
@@ -1104,12 +1104,11 @@ function animate() {
     const dt = 1/60;
     
     velocity.addScaledVector(acceleration, dt);
-    
     ball.position.addScaledVector(velocity, dt);
     
     if (ball.position.y <= floorY) {
       ball.position.y = floorY;
-      velocity.y *= -0.7;
+      velocity.y *= -restitution;
       
       if (Math.abs(velocity.y) < 1) {
         isFlying = false;
@@ -1118,7 +1117,50 @@ function animate() {
       }
     }
     
-    if (ball.position.z < -COURT_LENGTH/2 - 5 || ball.position.z > COURT_LENGTH/2 + 5) {
+    const boardOffset = 1 + 0.05/2;
+    const boardX = (targetZ > 0) ? COURT_LENGTH/2 - boardOffset : -COURT_LENGTH/2 + boardOffset;
+    
+    if (
+      Math.abs(ball.position.x - boardX) < 0.24 &&
+      ball.position.y > rimHeight - 1 &&
+      ball.position.y < rimHeight + 1 &&
+      Math.abs(ball.position.z) < 1
+    ) {
+      velocity.x = -velocity.x * restitution;
+      console.log('Ball hit backboard');
+    }
+    
+    const rimOffset = 1 + 0.05/2 + 0.35;
+    const rimX = (targetZ > 0) ? COURT_LENGTH/2 - rimOffset : -COURT_LENGTH/2 + rimOffset;
+    const dz = ball.position.z;
+    const dx = ball.position.x - rimX;
+    const horizDist = Math.hypot(dx, dz);
+    
+    if (
+      !hasScored &&
+      velocity.y < 0 &&
+      Math.abs(ball.position.y - rimHeight) < 0.24 &&
+      horizDist < (rimRadius - 0.24)
+    ) {
+      hasScored = true;
+      console.log('SHOT MADE!');
+      velocity.y = -1;
+      velocity.x = 0;
+      velocity.z = 0;
+    }
+    
+    if (
+      Math.abs(ball.position.y - rimHeight) < 0.1 &&
+      horizDist > (rimRadius - 0.24) && 
+      horizDist < (rimRadius + 0.1)
+    ) {
+      const normal = new THREE.Vector3(dx, 0, dz).normalize();
+      const dotProduct = velocity.dot(normal);
+      velocity.addScaledVector(normal, -2 * dotProduct * restitution);
+      console.log('Ball hit rim');
+    }
+    
+    if (ball.position.x < -COURT_LENGTH/2 - 5 || ball.position.x > COURT_LENGTH/2 + 5) {
       isFlying = false;
       console.log('Ball went out of bounds');
     }
@@ -1126,7 +1168,6 @@ function animate() {
   
   controls.enabled = isOrbitEnabled;
   controls.update();
-  
   renderer.render(scene, camera);
 }
 
