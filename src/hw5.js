@@ -70,11 +70,11 @@ let isOrbitEnabled = true;
 //document.body.appendChild(instructionsElement);
 
 // Handle key events
-function handleKeyDown(e) {
-  if (e.key === "o") {
-    isOrbitEnabled = !isOrbitEnabled;
-  }
-}
+// function handleKeyDown(e) {
+//   if (e.key === "o") {
+//     isOrbitEnabled = !isOrbitEnabled;
+//   }
+// }
 
 document.addEventListener('keydown', handleKeyDown);
 
@@ -484,6 +484,68 @@ function createScoreDisplay() {
   return scoreContainer;
 }
 
+let ball;
+let isFlying = false;
+let velocity = new THREE.Vector3();
+let acceleration = new THREE.Vector3(0, -9.8, 0);
+
+function createInteractiveBall() {
+  const BALL_RADIUS = 0.24;
+  const BALL_HEIGHT_OFFSET = 0.1;
+  
+  ball = createBallMesh(BALL_RADIUS);
+  positionBall(ball, BALL_RADIUS, BALL_HEIGHT_OFFSET);
+  
+  const seams = createRealisticBasketballSeams(BALL_RADIUS);
+  seams.forEach(seam => ball.add(seam));
+  
+  scene.add(ball);
+  return ball;
+}
+
+function handleKeyDown(e) {
+  switch(e.key.toLowerCase()) {
+    case 'o': 
+      isOrbitEnabled = !isOrbitEnabled; 
+      break;
+    
+    case 'arrowleft':  
+      if (!isFlying) {
+        ball.position.x = Math.max(-COURT_WIDTH/2 + 1, ball.position.x - 0.5);
+      }
+      break;
+    case 'arrowright': 
+      if (!isFlying) {
+        ball.position.x = Math.min(COURT_WIDTH/2 - 1, ball.position.x + 0.5);
+      }
+      break;
+    case 'arrowup':    
+      if (!isFlying) {
+        ball.position.z = Math.max(-COURT_LENGTH/2 + 1, ball.position.z - 0.5);
+      }
+      break;
+    case 'arrowdown':  
+      if (!isFlying) {
+        ball.position.z = Math.min(COURT_LENGTH/2 - 1, ball.position.z + 0.5);
+      }
+      break;
+    
+    case 'r':          
+      resetBall(); 
+      break;
+  }
+}
+
+function resetBall() {
+  if (ball) {
+    isFlying = false;
+    velocity.set(0, 0, 0);
+    ball.position.set(0, 0.24 + 0.1, 0);
+    console.log('Ball reset to center court');
+  }
+}
+
+
 function createControlsDisplay() {
   const controlsContainer = document.createElement('div');
   controlsContainer.id = 'controls';
@@ -495,30 +557,27 @@ function createControlsDisplay() {
   controlsContainer.innerHTML = `
     <h3>Controls:</h3>
     <p><span class="control-key">O</span> - Toggle orbit camera</p>
-    <p><span class="control-key">R</span> - Reset ball</p>
     <p><span class="control-key">⬆️ ⬇️ ⬅️ ➡️</span> - Move ball</p>
     <p><span class="control-key">W</span> / <span class="control-key">S</span> - Adjust shot power</p>
     <p><span class="control-key">SPACE</span> - Shoot ball</p>
+    <p><span class="control-key">R</span> - Reset ball</p>
   `;
   
   return controlsContainer;
 }
 
 function setupCameraToggle() {
-  let cameraControlsEnabled = false;
-  
   document.addEventListener('keydown', (event) => {
     if (event.key.toLowerCase() === 'o') {
-      cameraControlsEnabled = !cameraControlsEnabled;
+      isOrbitEnabled = !isOrbitEnabled;
       
-      if (window.cameraControls) {
-        window.cameraControls.enabled = cameraControlsEnabled;
-      }
+      // Apply the toggle to the existing controls
+      controls.enabled = isOrbitEnabled;
       
       const feedback = document.createElement('div');
       feedback.style.position = 'absolute';
-      feedback.style.top = '5%';
-      feedback.style.left = '95%';
+      feedback.style.top = '50%';
+      feedback.style.left = '50%';
       feedback.style.transform = 'translate(-50%, -50%)';
       feedback.style.background = 'rgba(0, 0, 0, 0.8)';
       feedback.style.color = 'white';
@@ -527,15 +586,17 @@ function setupCameraToggle() {
       feedback.style.fontSize = '18px';
       feedback.style.fontFamily = 'Arial, sans-serif';
       feedback.style.zIndex = '1000';
-      feedback.textContent = `Camera Controls: ${cameraControlsEnabled ? 'OFF' : 'ON'}`;
+      feedback.textContent = `Camera Controls: ${isOrbitEnabled ? 'ON' : 'OFF'}`;
       
       document.body.appendChild(feedback);
       
       setTimeout(() => {
-        document.body.removeChild(feedback);
+        if (document.body.contains(feedback)) {
+          document.body.removeChild(feedback);
+        }
       }, 2000);
       
-      console.log(`Camera controls ${cameraControlsEnabled ? 'enabled' : 'disabled'}`);
+      console.log(`Camera controls ${isOrbitEnabled ? 'enabled' : 'disabled'}`);
     }
   });
 }
@@ -968,7 +1029,7 @@ function createNBALogo() {
 createCourtLines();
 createHoop(HALF_COURT_LENGTH);
 createHoop(-HALF_COURT_LENGTH);
-createStaticBall();
+createInteractiveBall();
 setupLighting();
 createBasicUI();
 createBleachers();
