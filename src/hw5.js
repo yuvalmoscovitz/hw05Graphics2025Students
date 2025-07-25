@@ -484,7 +484,7 @@ function createScoreDisplay() {
   
   scoreContainer.innerHTML = `
     <h3>Score: <span id="score-value">0</span></h3>
-    <p>Power: <span id="power-value">50%</span></p>
+    <p>Power: <span id="power-value">30%</span></p>
   `;
   
   return scoreContainer;
@@ -509,7 +509,10 @@ function createInteractiveBall() {
   return ball;
 }
 
-let shotPower = 0.5;
+let shotPower = 0.3;
+let targetZ = 0;
+const floorY = 0.34;
+const rimHeight = 3.05;
 
 function handleKeyDown(e) {
   switch(e.key.toLowerCase()) {
@@ -539,18 +542,47 @@ function handleKeyDown(e) {
       break;
     
     case 'w':          
-      shotPower = Math.min(1, shotPower + 0.05); 
+      shotPower = Math.min(1, shotPower + 0.01); 
       updatePowerDisplay(); 
       break;
     case 's':          
-      shotPower = Math.max(0, shotPower - 0.05); 
+      shotPower = Math.max(0, shotPower - 0.01); 
       updatePowerDisplay(); 
+      break;
+    
+    case ' ':          
+      if (!isFlying) { 
+        launchShot(); 
+      } 
       break;
     
     case 'r':          
       resetBall(); 
       break;
   }
+}
+
+function launchShot() {
+  targetZ = (Math.abs(ball.position.x - COURT_LENGTH/2) < Math.abs(ball.position.x + COURT_LENGTH/2))
+            ? COURT_LENGTH/2
+            : -COURT_LENGTH/2;
+
+  const targetVector = new THREE.Vector3(
+    targetZ - ball.position.x,
+    rimHeight - ball.position.y,
+    -ball.position.z
+  );
+
+  targetVector.y += 30;
+
+  const direction = targetVector.normalize();
+  const speed = shotPower * 30;
+
+  velocity.copy(direction.multiplyScalar(speed));
+  
+  isFlying = true;
+  
+  console.log(`Shot launched with power ${Math.round(shotPower * 100)}% toward hoop at x=${targetZ}`);
 }
 
 function updatePowerDisplay() {
@@ -567,7 +599,7 @@ function resetBall() {
     isFlying = false;
     velocity.set(0, 0, 0);
     ball.position.set(0, 0.24 + 0.1, 0);
-    shotPower = 0.5;
+    shotPower = 0.3;
     updatePowerDisplay();
     console.log('Ball reset to center court');
   }
@@ -1065,11 +1097,33 @@ create3DBanner();
 createKeyAndFreeThrow();
 ///////////////////////////////////////////////////////////////
 
-// Animation function
 function animate() {
   requestAnimationFrame(animate);
   
-  // Update controls
+  if (isFlying) {
+    const dt = 1/60;
+    
+    velocity.addScaledVector(acceleration, dt);
+    
+    ball.position.addScaledVector(velocity, dt);
+    
+    if (ball.position.y <= floorY) {
+      ball.position.y = floorY;
+      velocity.y *= -0.7;
+      
+      if (Math.abs(velocity.y) < 1) {
+        isFlying = false;
+        velocity.y = 0;
+        console.log('Ball stopped bouncing');
+      }
+    }
+    
+    if (ball.position.z < -COURT_LENGTH/2 - 5 || ball.position.z > COURT_LENGTH/2 + 5) {
+      isFlying = false;
+      console.log('Ball went out of bounds');
+    }
+  }
+  
   controls.enabled = isOrbitEnabled;
   controls.update();
   
