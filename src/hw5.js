@@ -424,6 +424,19 @@ function createBasicUI() {
   const controlsContainer = createControlsDisplay();
   document.body.appendChild(controlsContainer);
   
+  const feedbackEl = document.createElement('div');
+  feedbackEl.id = 'feedback';
+  feedbackEl.style.position = 'absolute';
+  feedbackEl.style.top = '50%';
+  feedbackEl.style.left = '50%';
+  feedbackEl.style.transform = 'translate(-50%, -50%)';
+  feedbackEl.style.color = 'brown';
+  feedbackEl.style.fontSize = '24px';
+  feedbackEl.style.fontWeight = 'bold';
+  feedbackEl.style.textAlign = 'center';
+  feedbackEl.style.zIndex = '1000';
+  document.body.appendChild(feedbackEl);
+  
   setupCameraToggle();
 }
 
@@ -484,7 +497,10 @@ function createScoreDisplay() {
   
   scoreContainer.innerHTML = `
     <h3>Score: <span id="score-value">0</span></h3>
-    <p>Power: <span id="power-value">30%</span></p>
+    <p>Power: <span id="power-value">50%</span></p>
+    <p>Attempts: <span id="shots-attempted">0</span></p>
+    <p>Makes: <span id="shots-made">0</span></p>
+    <p>Accuracy: <span id="accuracy">0%</span></p>
   `;
   
   return scoreContainer;
@@ -520,6 +536,26 @@ const rimRadius = 0.35;
 
 let spinAxis = new THREE.Vector3(1, 0, 0);
 let spinSpeed = 0;
+
+let shotsAttempted = 0;
+let shotsMade = 0;
+let score = 0;
+let feedbackTimeout;
+
+function updateUI() {
+  document.getElementById('power-value').textContent = `${Math.round(shotPower * 100)}%`;
+  document.getElementById('shots-attempted').textContent = shotsAttempted;
+  document.getElementById('shots-made').textContent = shotsMade;
+  document.getElementById('accuracy').textContent = `${shotsAttempted ? Math.round(shotsMade/shotsAttempted*100) : 0}%`;
+  document.getElementById('score-value').textContent = score;
+}
+
+function showFeedback(text) {
+  clearTimeout(feedbackTimeout);
+  const el = document.getElementById('feedback');
+  el.textContent = text;
+  feedbackTimeout = setTimeout(() => el.textContent = '', 1500);
+}
 
 function handleKeyDown(e) {
   switch(e.key.toLowerCase()) {
@@ -583,13 +619,15 @@ function launchShot() {
     -ball.position.z
   );
 
-  targetVector.y += 20;
+  targetVector.y += 30;
   const direction = targetVector.normalize();
   const speed = shotPower * 30;
   velocity.copy(direction.multiplyScalar(speed));
   
   isFlying = true;
   hasScored = false;
+  shotsAttempted++;
+  updateUI();
   
   console.log(`Shot launched with power ${Math.round(shotPower * 100)}% toward hoop at x=${targetZ}`);
 }
@@ -1161,7 +1199,11 @@ function animate() {
       horizDist < (rimRadius - 0.24)
     ) {
       hasScored = true;
-      console.log('SHOT MADE!');
+      shotsMade++;
+      score += 2;
+      showFeedback('SWISH SWISH BISH!');
+      updateUI();
+      console.log('SWISH SWISH!');
       velocity.y = -1;
       velocity.x = 0;
       velocity.z = 0;
@@ -1180,6 +1222,8 @@ function animate() {
     
     if (ball.position.x < -COURT_LENGTH/2 - 5 || ball.position.x > COURT_LENGTH/2 + 5) {
       isFlying = false;
+      showFeedback('MISSED!!!');
+      updateUI();
       console.log('Ball went out of bounds');
     }
   }
