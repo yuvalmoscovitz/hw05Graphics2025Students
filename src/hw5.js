@@ -424,17 +424,22 @@ function createBasicUI() {
   const controlsContainer = createControlsDisplay();
   document.body.appendChild(controlsContainer);
   
+  const statusContainer = createGameStatus();
+  document.body.appendChild(statusContainer);
+  
   const feedbackEl = document.createElement('div');
   feedbackEl.id = 'feedback';
   feedbackEl.style.position = 'absolute';
   feedbackEl.style.top = '50%';
   feedbackEl.style.left = '50%';
   feedbackEl.style.transform = 'translate(-50%, -50%)';
-  feedbackEl.style.color = 'brown';
-  feedbackEl.style.fontSize = '24px';
+  feedbackEl.style.color = '#ffcc00';
+  feedbackEl.style.fontSize = '28px';
   feedbackEl.style.fontWeight = 'bold';
   feedbackEl.style.textAlign = 'center';
   feedbackEl.style.zIndex = '1000';
+  feedbackEl.style.pointerEvents = 'none';
+  feedbackEl.style.display = 'none';
   document.body.appendChild(feedbackEl);
   
   setupCameraToggle();
@@ -443,45 +448,91 @@ function createBasicUI() {
 function createGlobalStyles() {
   const style = document.createElement('style');
   style.textContent = `
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Arial', sans-serif;
+    }
+    
     .ui-container {
       position: absolute;
       color: white;
       font-family: 'Arial', sans-serif;
       font-size: 16px;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 15px;
-      border-radius: 8px;
-      backdrop-filter: blur(5px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 20px;
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      min-width: 200px;
     }
     
     .ui-container h3 {
-      margin: 0 0 10px 0;
-      font-size: 18px;
+      margin: 0 0 15px 0;
+      font-size: 20px;
       font-weight: bold;
+      text-align: center;
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     }
     
     .ui-container p {
-      margin: 5px 0;
-      line-height: 1.4;
+      margin: 8px 0;
+      line-height: 1.6;
+      font-size: 14px;
     }
     
     #score-value {
       color: #ffcc00;
       font-weight: bold;
+      font-size: 18px;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
     }
     
     #power-value {
       color: #00ff88;
       font-weight: bold;
+      font-size: 16px;
+    }
+    
+    #shots-attempted, #shots-made {
+      color: #00bfff;
+      font-weight: bold;
+    }
+    
+    #accuracy {
+      color: #ff6b6b;
+      font-weight: bold;
     }
     
     .control-key {
-      background: rgba(255, 255, 255, 0.2);
-      padding: 2px 6px;
-      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.3);
+      padding: 4px 8px;
+      border-radius: 6px;
       font-family: 'Courier New', monospace;
       font-weight: bold;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: inline-block;
+      margin-right: 5px;
+    }
+    
+    #feedback {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px 25px;
+      border-radius: 10px;
+      border: 2px solid #ffcc00;
+      box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    }
+    
+    .stat-highlight {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px;
+      border-radius: 6px;
+      margin: 5px 0;
+      border-left: 4px solid #00ff88;
     }
   `;
   document.head.appendChild(style);
@@ -496,11 +547,14 @@ function createScoreDisplay() {
   scoreContainer.style.left = '20px';
   
   scoreContainer.innerHTML = `
-    <h3>Score: <span id="score-value">0</span></h3>
-    <p>Power: <span id="power-value">50%</span></p>
-    <p>Attempts: <span id="shots-attempted">0</span></p>
-    <p>Makes: <span id="shots-made">0</span></p>
-    <p>Accuracy: <span id="accuracy">0%</span></p>
+    <h3>STATS</h3>
+    <div class="stat-highlight">
+      <p><strong>Score:</strong> <span id="score-value">0</span> points</p>
+    </div>
+    <p><strong>Shot Power:</strong> <span id="power-value">30%</span></p>
+    <p><strong>Attempts:</strong> <span id="shots-attempted">0</span></p>
+    <p><strong>Makes:</strong> <span id="shots-made">0</span></p>
+    <p><strong>Accuracy:</strong> <span id="accuracy">0%</span></p>
   `;
   
   return scoreContainer;
@@ -548,13 +602,26 @@ function updateUI() {
   document.getElementById('shots-made').textContent = shotsMade;
   document.getElementById('accuracy').textContent = `${shotsAttempted ? Math.round(shotsMade/shotsAttempted*100) : 0}%`;
   document.getElementById('score-value').textContent = score;
+  updateGameStatus();
 }
 
 function showFeedback(text) {
   clearTimeout(feedbackTimeout);
   const el = document.getElementById('feedback');
-  el.textContent = text;
-  feedbackTimeout = setTimeout(() => el.textContent = '', 1500);
+  if (text && text.trim() !== '') {
+    el.textContent = text;
+    el.style.display = 'block';
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.animation = 'pulse 0.5s ease-in-out';
+  } else {
+    el.style.display = 'none';
+  }
+  feedbackTimeout = setTimeout(() => {
+    el.textContent = '';
+    el.style.animation = 'none';
+    el.style.display = 'none';
+  }, 2000);
 }
 
 function handleKeyDown(e) {
@@ -671,27 +738,59 @@ function createControlsDisplay() {
   return controlsContainer;
 }
 
+function createGameStatus() {
+  const statusContainer = document.createElement('div');
+  statusContainer.id = 'game-status';
+  statusContainer.className = 'ui-container';
+  
+  statusContainer.style.top = '20px';
+  statusContainer.style.right = '20px';
+  statusContainer.style.textAlign = 'center';
+  
+  statusContainer.innerHTML = `
+    <h3>GAME STATUS</h3>
+    <p id="target-info">Aim for the nearest hoop!</p>
+    <p id="ball-status">Ball ready to shoot</p>
+  `;
+  
+  return statusContainer;
+}
+
+function updateGameStatus() {
+  const targetInfo = document.getElementById('target-info');
+  const ballStatus = document.getElementById('ball-status');
+  
+  if (targetInfo && ballStatus) {
+    if (isFlying) {
+      targetInfo.textContent = `Shooting toward ${targetZ > 0 ? 'right' : 'left'} hoop`;
+      ballStatus.textContent = 'Ball in flight...';
+    } else {
+      targetInfo.textContent = 'Aim for the nearest hoop!';
+      ballStatus.textContent = 'Ball ready to shoot';
+    }
+  }
+}
+
 function setupCameraToggle() {
   document.addEventListener('keydown', (event) => {
     if (event.key.toLowerCase() === 'o') {
       isOrbitEnabled = !isOrbitEnabled;
-      
-      // Apply the toggle to the existing controls
       controls.enabled = isOrbitEnabled;
       
       const feedback = document.createElement('div');
       feedback.style.position = 'absolute';
       feedback.style.top = '50%';
-      feedback.style.left = '50%';
-      feedback.style.transform = 'translate(-50%, -50%)';
-      feedback.style.background = 'rgba(0, 0, 0, 0.8)';
-      feedback.style.color = 'white';
-      feedback.style.padding = '10px 20px';
-      feedback.style.borderRadius = '5px';
-      feedback.style.fontSize = '18px';
-      feedback.style.fontFamily = 'Arial, sans-serif';
+      feedback.style.right = '20px';
+      feedback.style.transform = 'translateY(-50%)';
+      feedback.style.background = 'rgba(0, 0, 0, 0.9)';
+      feedback.style.color = isOrbitEnabled ? '#00ff88' : '#ff6b6b';
+      feedback.style.padding = '12px 20px';
+      feedback.style.borderRadius = '8px';
+      feedback.style.fontSize = '16px';
+      feedback.style.fontWeight = 'bold';
+      feedback.style.border = `2px solid ${isOrbitEnabled ? '#00ff88' : '#ff6b6b'}`;
       feedback.style.zIndex = '1000';
-      feedback.textContent = `Camera Controls: ${isOrbitEnabled ? 'ON' : 'OFF'}`;
+      feedback.textContent = `Camera: ${isOrbitEnabled ? 'FREE' : 'LOCKED'}`;
       
       document.body.appendChild(feedback);
       
@@ -699,9 +798,7 @@ function setupCameraToggle() {
         if (document.body.contains(feedback)) {
           document.body.removeChild(feedback);
         }
-      }, 2000);
-      
-      console.log(`Camera controls ${isOrbitEnabled ? 'enabled' : 'disabled'}`);
+      }, 1500);
     }
   });
 }
@@ -1162,6 +1259,8 @@ function animate() {
     const spinAngle = spinSpeed * dt;
     ball.rotateOnWorldAxis(spinAxis, spinAngle);
     
+    updateGameStatus();
+    
     if (ball.position.y <= floorY) {
       ball.position.y = floorY;
       velocity.y *= -restitution;
@@ -1169,6 +1268,10 @@ function animate() {
       if (Math.abs(velocity.y) < 1) {
         isFlying = false;
         velocity.y = 0;
+        if (!hasScored) {
+          showFeedback('MISSED SHOT!');
+        }
+        updateGameStatus();
         console.log('Ball stopped bouncing');
       }
     }
@@ -1201,9 +1304,9 @@ function animate() {
       hasScored = true;
       shotsMade++;
       score += 2;
-      showFeedback('SWISH SWISH BISH!');
+      showFeedback('SHOT MADE!');
       updateUI();
-      console.log('SWISH SWISH!');
+      console.log('SHOT MADE!');
       velocity.y = -1;
       velocity.x = 0;
       velocity.z = 0;
@@ -1222,8 +1325,9 @@ function animate() {
     
     if (ball.position.x < -COURT_LENGTH/2 - 5 || ball.position.x > COURT_LENGTH/2 + 5) {
       isFlying = false;
-      showFeedback('MISSED!!!');
+      showFeedback('MISSED SHOT!');
       updateUI();
+      updateGameStatus();
       console.log('Ball went out of bounds');
     }
   }
